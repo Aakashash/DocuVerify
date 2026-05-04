@@ -16,6 +16,18 @@ jest.mock('@bam.tech/react-native-image-resizer', () => ({
   },
 }));
 
+jest.mock('@react-native-ml-kit/text-recognition', () => ({
+  __esModule: true,
+  default: {
+    recognize: jest.fn(() =>
+      Promise.resolve({
+        text: '',
+        blocks: [],
+      }),
+    ),
+  },
+}));
+
 jest.mock('react-native-document-scanner-plugin', () => {
   const ResponseType = {
     Base64: 'base64',

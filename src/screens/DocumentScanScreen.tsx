@@ -1,3 +1,4 @@
+import { useNavigation } from '@react-navigation/native';
 import DocumentScanner, {
   ResponseType,
   ScanDocumentResponseStatus,
@@ -16,10 +17,12 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+import type { RootStackParamList } from '../navigation/types';
 import {
   assessDocumentImageQuality,
   type DocumentQualityResult,
 } from '../quality';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 function toDisplayUri(path: string): string {
   if (path.startsWith('file://')) {
@@ -29,10 +32,13 @@ function toDisplayUri(path: string): string {
 }
 
 export default function DocumentScanScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const isDark = useColorScheme() === 'dark';
   const colors = isDark ? dark : light;
 
   const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [scannedPath, setScannedPath] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [assessingQuality, setAssessingQuality] = useState(false);
   const [quality, setQuality] = useState<DocumentQualityResult | null>(null);
@@ -40,6 +46,7 @@ export default function DocumentScanScreen() {
 
   const clearPreview = useCallback(() => {
     setPreviewUri(null);
+    setScannedPath(null);
     setQuality(null);
     setQualityOverride(false);
     setAssessingQuality(false);
@@ -90,6 +97,7 @@ export default function DocumentScanScreen() {
       }
 
       setPreviewUri(toDisplayUri(first));
+      setScannedPath(first);
       setQuality(null);
       setQualityOverride(false);
       setAssessingQuality(true);
@@ -233,6 +241,28 @@ export default function DocumentScanScreen() {
             source={{ uri: previewUri }}
             style={[styles.previewImage, { backgroundColor: colors.surface }]}
           />
+          {scannedPath && !assessingQuality ? (
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.primaryButton,
+                {
+                  backgroundColor: colors.accent,
+                  marginBottom: 12,
+                  opacity: pressed ? 0.9 : 1,
+                },
+              ]}
+              onPress={() =>
+                navigation.navigate('LoanExtraction', {
+                  imagePath: scannedPath,
+                  displayUri: previewUri,
+                })
+              }>
+              <Text style={styles.primaryButtonText}>
+                Extract text for loan application
+              </Text>
+            </Pressable>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             style={({ pressed }) => [
