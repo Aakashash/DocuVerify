@@ -7,6 +7,13 @@ apply plugin: "com.facebook.react"
  * By default you don't need to apply any configuration, just uncomment the lines you need.
  */
 react {
+    /**
+     * Default debuggableVariants are ["debug", "debugOptimized"], which skip bundling so the app
+     * loads JS from Metro (USB / same LAN). Empty list embeds the bundle in debug APKs so
+     * sideloaded app-debug.apk works without a dev machine connection.
+     */
+    debuggableVariants.set([])
+
     /* Folders */
     //   The root of your project, i.e. where "package.json" lives. Default is '../..'
     // root = file("../../")
@@ -72,6 +79,20 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+/** Matches @string/app_name for APK file names (DocuVerify-debug.apk, etc.). */
+def getAppDisplayNameForApk() {
+    def f = file("src/main/res/values/strings.xml")
+    if (!f.exists()) {
+        return "DocuVerify"
+    }
+    def text = f.getText("UTF-8")
+    def m = text =~ /<string name="app_name">([^<]*)<\/string>/
+    if (!m.find()) {
+        return "DocuVerify"
+    }
+    return m.group(1).trim()
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -103,6 +124,13 @@ android {
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }
+    }
+
+    def apkLabel = getAppDisplayNameForApk().replaceAll(/[^a-zA-Z0-9._-]/, "_")
+    applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach { output ->
+            output.outputFileName = "${apkLabel}-${variant.buildType.name}.apk"
         }
     }
 }
